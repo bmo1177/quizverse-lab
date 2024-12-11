@@ -22,26 +22,27 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 to-white">
       <Hero />
       
       <section className="py-20 container mx-auto px-4">
-        <h2 className="text-3xl font-bold tracking-tight mb-8">Featured Decks</h2>
+        <h2 className="text-3xl font-bold tracking-tight mb-8 text-purple-900">Featured Decks</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sampleDecks.map((deck, index) => (
             <DeckCard
               key={index}
               {...deck}
               className="animate-fade-in"
+              onClick={() => console.log(`Clicked deck: ${deck.title}`)}
               style={{ animationDelay: `${index * 100}ms` }}
             />
           ))}
         </div>
       </section>
 
-      <section className="py-20 bg-secondary/50">
+      <section className="py-20 bg-purple-50/50">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold tracking-tight mb-8">Try It Out</h2>
+          <h2 className="text-3xl font-bold tracking-tight mb-8 text-purple-900">Try It Out</h2>
           <div className="max-w-lg mx-auto">
             <Flashcard
               front="What is the capital of France?"
