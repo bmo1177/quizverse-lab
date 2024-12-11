@@ -21,11 +21,11 @@ export function Flashcard({ front, back, className }: FlashcardProps) {
       onClick={() => setIsFlipped(!isFlipped)}
     >
       <div className="flip-card-inner">
-        <Card className="flip-card-front glass p-8 flex items-center justify-center">
-          <p className="text-xl font-medium">{front}</p>
+        <Card className="flip-card-front glass p-8 flex items-center justify-center hover:shadow-xl transition-shadow">
+          <p className="text-2xl font-medium text-purple-900">{front}</p>
         </Card>
-        <Card className="flip-card-back glass p-8 flex items-center justify-center">
-          <p className="text-xl font-medium">{back}</p>
+        <Card className="flip-card-back glass p-8 flex items-center justify-center hover:shadow-xl transition-shadow">
+          <p className="text-2xl font-medium text-purple-900">{back}</p>
         </Card>
       </div>
     </div>
