@@ -4,15 +4,15 @@ import { Flashcard } from "@/components/Flashcard";
 import { DeckDialog } from "@/components/DeckDialog";
 import { FlashcardDialog } from "@/components/FlashcardDialog";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
-import { useState } from "react";
+import { PlusCircle, Import } from "lucide-react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 
 interface Deck {
   id: string;
   title: string;
   description: string;
-  cardCount: number;
+  flashcards: FlashcardType[];
 }
 
 interface FlashcardType {
@@ -27,36 +27,24 @@ const Index = () => {
       id: "1",
       title: "Basic Mathematics",
       description: "Essential math concepts and formulas for everyday use",
-      cardCount: 50,
-    },
-    {
-      id: "2",
-      title: "World History",
-      description: "Key events and figures throughout human history",
-      cardCount: 75,
-    },
-    {
-      id: "3",
-      title: "Spanish Vocabulary",
-      description: "Common Spanish words and phrases for beginners",
-      cardCount: 100,
+      flashcards: [
+        {
+          id: "1",
+          front: "What is 2 + 2?",
+          back: "4",
+        },
+      ],
     },
   ]);
 
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
-  const [flashcards, setFlashcards] = useState<FlashcardType[]>([
-    {
-      id: "1",
-      front: "What is the capital of France?",
-      back: "Paris",
-    },
-  ]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCreateDeck = (data: { title: string; description: string }) => {
     const newDeck: Deck = {
       id: Date.now().toString(),
       ...data,
-      cardCount: 0,
+      flashcards: [],
     };
     setDecks([...decks, newDeck]);
     toast.success("Deck created successfully!");
@@ -77,26 +65,67 @@ const Index = () => {
     toast.success("Deck deleted successfully!");
   };
 
-  const handleCreateFlashcard = (data: { front: string; back: string }) => {
+  const handleCreateFlashcard = (deckId: string, data: { front: string; back: string }) => {
     const newFlashcard: FlashcardType = {
       id: Date.now().toString(),
       ...data,
     };
-    setFlashcards([...flashcards, newFlashcard]);
+    const updatedDecks = decks.map((deck) =>
+      deck.id === deckId
+        ? { ...deck, flashcards: [...deck.flashcards, newFlashcard] }
+        : deck
+    );
+    setDecks(updatedDecks);
     toast.success("Flashcard created successfully!");
   };
 
-  const handleEditFlashcard = (id: string, data: { front: string; back: string }) => {
-    const updatedFlashcards = flashcards.map((card) =>
-      card.id === id ? { ...card, ...data } : card
+  const handleEditFlashcard = (deckId: string, cardId: string, data: { front: string; back: string }) => {
+    const updatedDecks = decks.map((deck) =>
+      deck.id === deckId
+        ? {
+            ...deck,
+            flashcards: deck.flashcards.map((card) =>
+              card.id === cardId ? { ...card, ...data } : card
+            ),
+          }
+        : deck
     );
-    setFlashcards(updatedFlashcards);
+    setDecks(updatedDecks);
     toast.success("Flashcard updated successfully!");
   };
 
-  const handleDeleteFlashcard = (id: string) => {
-    setFlashcards(flashcards.filter((card) => card.id !== id));
+  const handleDeleteFlashcard = (deckId: string, cardId: string) => {
+    const updatedDecks = decks.map((deck) =>
+      deck.id === deckId
+        ? {
+            ...deck,
+            flashcards: deck.flashcards.filter((card) => card.id !== cardId),
+          }
+        : deck
+    );
+    setDecks(updatedDecks);
     toast.success("Flashcard deleted successfully!");
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const importedDecks = JSON.parse(content) as Deck[];
+        setDecks([...decks, ...importedDecks]);
+        toast.success("Decks imported successfully!");
+      } catch (error) {
+        toast.error("Failed to import decks. Please check the file format.");
+      }
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -107,21 +136,42 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-12">
             <h2 className="text-4xl font-bold tracking-tight text-purple-900">Featured Decks</h2>
-            <DeckDialog
-              trigger={
-                <Button className="gap-2">
-                  <PlusCircle className="h-4 w-4" />
-                  Create Deck
+            <div className="flex gap-4">
+              <DeckDialog
+                trigger={
+                  <Button className="gap-2">
+                    <PlusCircle className="h-4 w-4" />
+                    Create Deck
+                  </Button>
+                }
+                onSave={handleCreateDeck}
+              />
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImport}
+                  ref={fileInputRef}
+                  className="hidden"
+                  id="import-file"
+                />
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Import className="h-4 w-4" />
+                  Import Decks
                 </Button>
-              }
-              onSave={handleCreateDeck}
-            />
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {decks.map((deck) => (
               <div key={deck.id} className="relative group">
                 <DeckCard
                   {...deck}
+                  cardCount={deck.flashcards.length}
                   onClick={() => setSelectedDeck(deck)}
                 />
                 <div className="absolute top-4 right-4 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -138,52 +188,49 @@ const Index = () => {
                     Delete
                   </Button>
                 </div>
+                {selectedDeck?.id === deck.id && (
+                  <div className="mt-8 space-y-8">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-2xl font-bold text-purple-900">Flashcards</h3>
+                      <FlashcardDialog
+                        trigger={
+                          <Button className="gap-2">
+                            <PlusCircle className="h-4 w-4" />
+                            Add Flashcard
+                          </Button>
+                        }
+                        onSave={(data) => handleCreateFlashcard(deck.id, data)}
+                      />
+                    </div>
+                    <div className="space-y-6">
+                      {deck.flashcards.map((flashcard) => (
+                        <div key={flashcard.id} className="relative group">
+                          <Flashcard
+                            front={flashcard.front}
+                            back={flashcard.back}
+                            className="animate-fade-in shadow-xl"
+                          />
+                          <div className="absolute top-4 right-4 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <FlashcardDialog
+                              trigger={<Button variant="secondary" size="sm">Edit</Button>}
+                              initialData={flashcard}
+                              onSave={(data) => handleEditFlashcard(deck.id, flashcard.id, data)}
+                            />
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteFlashcard(deck.id, flashcard.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 bg-purple-50/50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex justify-between items-center mb-12">
-              <h2 className="text-4xl font-bold tracking-tight text-purple-900">Try It Out</h2>
-              <FlashcardDialog
-                trigger={
-                  <Button className="gap-2">
-                    <PlusCircle className="h-4 w-4" />
-                    Add Flashcard
-                  </Button>
-                }
-                onSave={handleCreateFlashcard}
-              />
-            </div>
-            <div className="space-y-8">
-              {flashcards.map((flashcard) => (
-                <div key={flashcard.id} className="relative group">
-                  <Flashcard
-                    front={flashcard.front}
-                    back={flashcard.back}
-                    className="animate-fade-in shadow-xl"
-                  />
-                  <div className="absolute top-4 right-4 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <FlashcardDialog
-                      trigger={<Button variant="secondary" size="sm">Edit</Button>}
-                      initialData={flashcard}
-                      onSave={(data) => handleEditFlashcard(flashcard.id, data)}
-                    />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteFlashcard(flashcard.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
